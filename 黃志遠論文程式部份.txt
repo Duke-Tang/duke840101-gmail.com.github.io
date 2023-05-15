@@ -1,0 +1,306 @@
+﻿附錄 D  
+Z 掃描模擬之 Fortran 程式碼 
+!=========================This program is for Cs atoms!=========================  !================================變數宣告================================  USE PORTLIB !計算時間之用 integer*4 int_time !計算時間之用 character*32 pfn1,char_time,begintime,endtime !計算時間之用 real*8 pi  
+real*8 c,omega,T,TK,Ts,TsK,Ex1,Ps,N0,Is,lambda,Ld,dm  
+real*8 radius0,length,rr,rf,z,P,I0,r,z0,l,LL,mCs,kkB,dfD,dLf,dLf43,dLf44,dLf45,df,fluence,wdd  real*8 lp,lpp,ro,rc,rim,rr1,efc,efs,eff  
+real*8 sub,sub1,rd,a,x,x43,x44,x45,rado  
+real*8 rn,V,V1,subn,sub1n,ei,ei2,J0,dawson,kb  
+real*8 alpha,alpha43,alpha44,alpha45,alpha0,efftt,effttt  
+real*8 zmax,zmin,dd,dz,fx,fx43,fx44,fx45,wzmin,wzmax  
+real*8 value,dI,dPhi,Phi,nI,nI43,nI44,nI45  
+real*8 w0,wz,rom,dl,dPhid,dId,wz1,wz2,aa1,aa2,I,jj,Rrz,Rrz1,Rrz2,dr  
+real*8 zz,dca,doa,dco,eca,eoa,eco,plp43,plp44,plp45,Bb,mF  
+character*32 pfn2  
+character*20 fname  
+integer nr,ns,jr1,jr2,k3,jz,nz,nL,nc,jc,pat,pat1,pat2,jp  
+dimension jj(52005),I(52005),Phi(52005),dPhid(52005),dId(52005)  
+dimension zz(23),dca(23),doa(23),dco(23),plp43(9),plp44(9),plp45(9)  
+dimension x43(9),x44(9),x45(9),fx43(9),fx44(9),fx45(9)  
+pi=acos(-1.)  
+!(All units are CGS.)  
+!================================輸入實驗數據==============================  zz=(/13.010,11.821,10.633,9.4437,8.2547,7.0659,5.8770,4.6881,3.4992,2.3103,1.7159,1.1214,0.52697, -0.067476,-0.66192,-1.2564,-1.8508,-2.4452,-3.6341,-4.8230,-6.0119,-7.2008,-8.3897/)  
+dca=(/0.12003,0.12371,0.12841,0.13346,0.13961,0.14522,0.15191,0.15934,0.16914,0.18512,0.20054, 0.22997,0.23960,0.16908,0.14113,0.13786,0.14275,0.14694,0.14943,0.14794,0.14416,0.13968,0.1341 4/)  
+doa=(/0.52572,0.53948,0.55977,0.58187,0.61058,0.63560,0.67073,0.70805,0.74868,0.79827,0.82326, 0.84958,0.87363,0.88274,0.86442,0.83432,0.80682,0.78201,0.73650,0.69541,0.65772,0.62719,0.5940
+51 
+2/)  
+dco=(/1.1416,1.1466,1.1470,1.1469,1.1433,1.1424,1.1325,1.1252,1.1296,1.1595,1.2180,1.3534,1.3713 ,0.95771,0.81633,0.82615,0.88466,0.93951,1.0145,1.0638,1.0960,1.1135,1.1292/)  
+! σ+極化光之躍遷機率 
+plp43=(/0.006732618851333,0.005049464138500,0.003606760098928,0.002404506732619,0.001442 704039571,0.000721352019786,0.000240450673262,0.,0./)  
+plp44=(/0.012118713932399,0.021207749381698,0.027267106347898,0.030296784830998,0.030296 784830998,0.027267106347898,0.021207749381698,0.012118713932399,0./)  plp45=(/0.004836493542182,0.014509480626546,0.029018961253092,0.048364935421819,0.072547 403132729,0.101566364385820,0.135421819181094,0.174113767518549,0.217642209398186/)  
+! σ−極化光之躍遷機率 
+!plp43=(/0.,0.,0.000240450673262,0.000721352019786,0.001442704039571,0.002404506732619,0.0 03606760098928,0.005049464138500,0.006732618851333/)  
+!plp44=(/0.,0.012118713932399,0.021207749381698,0.027267106347898,0.030296784830998,0.0302 96784830998,0.027267106347898,0.021207749381698,0.012118713932399/)  !plp45=(/0.217642209398186,0.174113767518549,0.135421819181094,0.101566364385820,0.072547 403132729,0.048364935421819,0.029018961253092,0.014509480626546,0.004836493542182/)  ! =================================模擬開始================================  !open(2,file='05-18-10-eca.xls',status='new') !找尋最佳條件用 !open(3,file='05-18-10-eoa.xls',status='new') !找尋最佳條件用 !open(4,file='05-18-10-eco.xls',status='new') !找尋最佳條件用 do 199 pat=0,0  
+do 198 pat1=0,0  
+do 197 pat2=0,0  
+write(fname,195) '06-20-11-',pat,pat1,pat2,'.xls'  
+195 format(A9,3(I2.2),A4)  
+open(1,file=fname,status='new')  
+write(*,*) fname,'Program is running!'  
+!================================計算時間開始==============================  int_time = TIME()  
+call TIME(char_time)  
+print *, 'Integer: ', int_time, 'time: ', char_time 
+begintime=char_time  
+!================================計算時間結束==============================  ! ===============================Inside the medium============================ 
+52 
+c=2.99792e10 ! Light speed in cm/sec  
+mCs=2.20695e-22 ! Cs atom mass in g  
+kkB=1.38065e-16 ! Boltzmann's constant  
+Ts=77.6 ! Saturated Vapor pressure temperature in deg C  TsK=Ts+273.15 ! Saturated Vapor pressure temperature in Kelvin  T=78.0 ! Vapor cell temperature in deg C  
+TK=T+273.15 ! Vapor cell temperature in Kelvin  
+Ex1=2.881+4.711-3999./TsK ! Using the formula by Steck et al.!  
+Ps=10.**Ex1 ! Cs vapor pressure in the cell at the temperature TK (in Kelvin)!  N0=0.5625*Ps*3.25e16 ! Spatial density of Rb vapor (atoms/cm^3) by Nesmayanov et al.  dm=2.9014 ! The dipole moment of Cs atoms, in C*cm*1e-27  Is=7.98294e-3/(dm*dm) ! Saturation intensity, in W/cm^2  
+lambda=852.347e-7 ! Wavelength, in cm 
+omega=c*2.*pi/lambda ! Angular frequency of the light  
+kb=2.*pi/lambda ! Wave number  
+w0=38.229e-4 ! Beam waist size, in cm  
+z0=pi*w0*w0/lambda ! Rayleigh range (cm)  
+P=400.e-6 ! Incident laser power, in Watts  
+Bb=0. ! bias magnetic field, in Gauss  
+dLf=+455. ! Laser detuning in MHz, blue detuning is positive  dLf43=dLf+397.6 ! Laser detuning in MHz, F=4 -> F'=3  
+dLf44=dLf+196.3129 ! Laser detuning in MHz, F=4 -> F'=4  
+dLf45=dLf-54.778 ! Laser detuning in MHz, F=4 -> F'=5  
+df=5.234 ! Linewidth of atomic energy level in MHz  dfD=(sqrt(2.*kkB*TK/mCs)/lambda)*1.e-6 ! Doppler width in MHz  x=-dLf/dfD ! Laser detuning normalized to the Doppler width  
+do 14 jp=1,9  
+mF=real(jp)-5.  
+! Laser detuning normalized to the Doppler width in magnetic field, F=4 -> F'=3  x43(jp)=-(dLf43+0.35*mF*Bb)/dfD  
+! Laser detuning normalized to the Doppler width in magnetic field, F=4 -> F'=4  x44(jp)=-(dLf44-0.37*(mF+1.)*Bb+0.35*mF*Bb)/dfD  
+! Laser detuning normalized to the Doppler width in magnetic field, F=4 -> F'=5  x45(jp)=-(dLf45-0.56*(mF+1.)*Bb+0.35*mF*Bb)/dfD  
+14 continue  
+a=0.5*df/dfD ! Linewidth normalized to the Doppler width 
+53 
+alpha0=dm*dm*N0*a*2.8367e-10 ! Total absorption coefficient  
+ write(*,*) 'T (deg C) = ',T  
+ write(*,*) 'Pressure (Torr) = ',Ps  
+ write(*,*) 'Saturation intensity (W/cm^2) = ',Is  
+ write(*,*) 'Atomic density (atoms/cm^3) = ',N0  
+ write(*,*) 'alpha0 (cm^-1) = ',alpha0  
+ write(*,*) 'Doppler width (MHz) = ',dfD  
+ write(*,*) 'Laser detuning (MHz) = ',dLf  
+ write(*,*) 'Atomic linewidth (MHz) = ',df  
+ write(*,*) 'Rayleigh range (cm) =',z0  
+ write(*,*) 'x = ',x  
+ write(*,*) 'a = ',a  
+rf=0.02 ! Front surface reflectivity of the cell  
+rr=0.02 ! Rear surface reflectivity of the cell  
+nz=23 ! Number of sampling z positions  
+dd=24.5 ! Distance between the beam waist position to the aperture  zmax=13.0103 ! Maximum z position for Z scan  
+zmin=-8.3897 ! Minimum z position for Z scan  
+wzmax=w0*sqrt(1+(zmax/z0)**2)  
+wzmin=w0*sqrt(1+(zmin/z0)**2)  
+ write(*,*) 'beam size at zmax (cm) = ', wzmax  
+ write(*,*) 'beam size at zmin (cm) = ', wzmin  
+dz=(zmax-zmin)/(nz-1) ! Increment size of z for Z scan sampling  Ld=0.30 ! Effective sample thickness, in cm  
+nL=1 ! Number of thin samples while the THICK cell is divided  length=Ld/nL ! Thickness of each THIN sample, length is set to be < z0!  ns=600 ! Number of segments in the thin sample  dl=length/ns ! Segment size while each THIN sample is further cut  fluence=0.2 ! Fluence, for closed-apertue case!  
+wdd=w0*sqrt(1+(dd/z0)**2)  
+ro=0.75 ! Open Aperture radius, in cm  
+rc=sqrt(-0.5*(wdd**2)*Log(1-fluence)) ! Closed Aperture radius, in cm  
+ write(*,*) 'aperture size (cm) = ', rc  
+rom=4.e-4 ! Integration interval size used to sum the total E^2 at the aperture area  rado=1.5e-2 ! cross section integration range (in sample) at beam waist position, in cm  nr=5000 ! Number of the radial segments (radial direction r!)  nc=rc/rom ! For CA /add 11-12-09 CY  
+fx=dawson(x) ! Dawson's Integral 
+54 
+do 15 jp=1,9  
+fx43(jp)=dawson(x43(jp))  
+fx44(jp)=dawson(x44(jp))  
+fx45(jp)=dawson(x45(jp))  
+15 continue  
+eca=0.  
+eoa=0.  
+eco=0.  
+! ----------- Select each Z for calculating the total enegy through the aperture -----------------------------  do 10 jz=1,nz  
+z=zz(jz)  
+efftt=0.  
+effttt=0.  
+wz=w0*sqrt(1.+((z-Ld/2.)/z0)**2)  
+Rrz=z-Ld/2.+z0**2/((z-Ld/2.)+1e-35)  
+I0=(1-rf)*2*P/(pi*wz**2)  
+dr=(rado/nr)*(wz/w0)  
+! ------------------------ Distribution of I and Phi at the input surface of the cell ------------------------  r=-dr  
+ do 5 jr1=1,nr+1  
+r=r+dr  
+I(jr1)=I0*exp(-2.*(r/wz)**2)  
+Phi(jr1)=-kb*r**2/(2*Rrz)  
+5 continue  
+ ! -------------------------------------------------------------------------------------------------------------------  !~~~~~~~Slicing into many thin samples, changing of I and Phi as the depth l changes ~~~~~~~  LL=-length  
+do while (LL.lE.(Ld-1.01*length))  
+LL=LL+length  
+! ---- In each thin sample, changing of I and Phi as the depth l changes ----------  ! Linear Diffraction Portion, ONLY consider the input and output surfaces of each thin sample!  r=-dr  
+wz1=w0*sqrt(1+((z-Ld/2.+LL)/z0)**2)  
+Rrz1=(z-Ld/2.+LL)*(1+(z0/(z-Ld/2.+LL))**2+1e-35)  
+wz2=w0*sqrt(1+((z-Ld/2.+LL+length)/z0)**2)  
+Rrz2=(z-Ld/2.+LL+length)*(1+(z0/(z-Ld/2.+LL+length))**2+1e-35)  
+do 31 jr1=1,nr+1  
+r=r+dr 
+55 
+dId(jr1)=I0*(((wz/wz2)**2)*exp(-2.*(r/wz2)**2)-((wz/wz1)**2)*exp(-2.*(r/wz1)**2))  aa2=-(kb*r**2)/(2*Rrz2)+atan((z-Ld/2.+LL+length)/z0)  
+aa1=-(kb*r**2)/(2*Rrz1)+atan((z-Ld/2.+LL)/z0)  
+ dPhid(jr1)=(aa2-aa1)  
+31 continue  
+! ++++++++++ End of linear diffraction portion ++++++++++++  
+! ^^^^^^^^ Nonlinear absorption and refraction portion ^^^^^^^^^  
+l=-dl  
+do while (l.lE.(length-1.01*dl))  
+l=l+dl  
+do 50 jr2=1,nr+1  
+alpha=0.  
+nI=0.  
+do 16 jp=1,9  
+alpha43=alpha0*(exp(-x43(jp)**2)/sqrt(1+I(jr2)/Is)-2*a*(1-2*x43(jp)*fx43(jp))/sqrt(pi))  alpha44=alpha0*(exp(-x44(jp)**2)/sqrt(1+I(jr2)/Is)-2*a*(1-2*x44(jp)*fx44(jp))/sqrt(pi))  alpha45=alpha0*(exp(-x45(jp)**2)/sqrt(1+I(jr2)/Is)-2*a*(1-2*x45(jp)*fx45(jp))/sqrt(pi))  alpha=alpha+alpha43*plp43(jp)+alpha44*plp44(jp)+alpha45*plp45(jp)  
+nI43=1+alpha0*(c/omega)*(fx43(jp)/sqrt(pi)-a*x43(jp)*exp(-x43(jp)**2)*sqrt(1+I(jr2)/Is))  nI44=1+alpha0*(c/omega)*(fx44(jp)/sqrt(pi)-a*x44(jp)*exp(-x44(jp)**2)*sqrt(1+I(jr2)/Is))  nI45=1+alpha0*(c/omega)*(fx45(jp)/sqrt(pi)-a*x45(jp)*exp(-x45(jp)**2)*sqrt(1+I(jr2)/Is))  nI=nI+nI43*plp43(jp)+nI44*plp44(jp)+nI45*plp45(jp)  
+16 continue  
+ dI=-alpha*I(jr2)*dl  
+ dPhi=-nI*dl*kb  
+ I(jr2)=I(jr2)+dI  
+ Phi(jr2)=Phi(jr2)+dPhi  
+ 50 continue  
+enddo  
+! ^^^^^^^^ End of nonlinear portion ^^^^^^^^^^^  
+! --- New I and Phi after one thin sample ---  
+do 58 jr2=1,nr+1  
+I(jr2)=I(jr2)+dId(jr2)  
+Phi(jr2)=Phi(jr2)+dPhid(jr2)  
+If (I(jr2) < 0) I(jr2)=0.  
+58 continue  
+! Go back for the next thin sample  
+enddo 
+56 
+! ================ I changes at the Output from the Rear Cell Surface ===============   do 100 jr2=1,nr+1  
+ I(jr2)=(1-rr)*I(jr2)  
+ 100 continue  
+! =========== Free Space Propagation to aperture, to allow for calculating E^2 ==========  lpp=dd-(z+Ld/2.) ! distance from the cell OUTPUT surface to the aperture  rim=dr  
+ rr1=-rom  
+ rd=ro-1.1*rom  
+ jc=0  
+! Sum the total E^2 at the aperture area, rr1 is the coordinate in detection coordinate  do while (rr1.lE.rd)  
+rr1=rr1+rom  
+r=-rim  
+! ------- where r is the "vapor cell" output coordinate ---------  
+do 70 k3=1,nr+1  
+r=r+rim  
+value=2.*pi*r*rr1/lambda/lpp  
+ jj(k3)=J0(value)  
+ value=2.*pi*(r+rim)*rr1/lambda/lpp  
+ jj(k3+1)=J0(value)  
+ 70 continue  
+efc=0.  
+efs=0.  
+r=-dr  
+! ---- do 90: Integration for r to get the E^2 at each rr1 ----------  
+do 90 k3=1,nr  
+r=r+dr  
+rn=r+dr  
+ei=sqrt(I(k3))  
+ei2=sqrt(I(k3+1))  
+sub=cos(-(Phi(k3)-pi*r**2/lambda/lpp))*jj(k3)  
+subn=cos(-(Phi(k3+1)-pi*rn**2/lambda/lpp))*jj(k3+1) 
+sub1=sin(-(Phi(k3)-pi*r**2/lambda/lpp))*jj(k3)  
+sub1n=sin(-(Phi(k3+1)-pi*rn**2/lambda/lpp))*jj(k3+1)  
+V=rn**2*ei2*subn-r**2*ei*sub+1.0/3.0*(rn**2+r**2+r*rn)*(ei*sub-ei2*subn)  V1=rn**2*ei2*sub1n-r**2*ei*sub1+1.0/3.0*(rn**2+r**2+r*rn)*(ei*sub1-ei2*sub1n)  V=pi*V 
+57 
+V1=pi*V1  
+efc=V/lambda/lpp+efc  
+efs=V1/lambda/lpp+efs  
+90 continue  
+! ---- Sum E^2 at each rr1 to obtain total E^2 for each Z position -------  
+eff=efc**2+efs**2 ! Total energy is a square sum of the field amplitudes of the two parts!  efftt=efftt+eff*2.*pi*abs(rr1+0.5*rom)*rom ! Integration of total energy  
+jc=jc+1  
+if(nc.EQ.jc) effttt=efftt ! For CA /add 11-12-09 CY 
+enddo  
+ write(1,193) z/z0,effttt/P,efftt/P,effttt/efftt/fluence  
+! position ^CA^ ^OA^ ^CA/OA^  
+193 format(F9.5,' ',F9.5,' ',F9.5,' ',F9.5)  
+eca=eca+(effttt/P-dca(jz))**2/(dca(jz))**2  
+eoa=eoa+(efftt/P-doa(jz))**2/(doa(jz))**2  
+eco=eco+(effttt/efftt/fluence-dco(jz))**2/(dco(jz))**2  
+! --- Go back to calculate for the NEXT Z position ------------  
+10 continue  
+!write(2,*) pat1,' ',pat2,' ',eca  
+!write(3,*) pat1,' ',pat2,' ',eoa  
+!write(4,*) pat1,' ',pat2,' ',eco  
+! ============ 計算時間開始 ========================  
+int_time = TIME()  
+call TIME(char_time)  
+print *, 'Integer: ', int_time, 'time: ', char_time 
+endtime=char_time  
+! ============ 計算時間結束 ========================  
+! ++++++++++ Recording data and closing file +++++++++++  
+!write(1,*)'The begintime is',' ', begintime  
+!write(1,*)'The endtime is',' ', endtime  
+close(1)  
+197 continue  
+198 continue  
+199 continue  
+!close(2)  
+!close(3)  
+!close(4)  
+stop 
+58 
+end  
+! +++++++++++++++++++++++++++++End of Programming ++++++++++++++++++++++++++++  ! ---- Dawson Integral Subroutine --------------  
+real*8 Function dawson(x)  
+integer*4 nmax  
+Real*8 x,h,a1,a2,a3  
+parameter (nmax=6,h=0.4,a1=2./3.,a2=0.4,a3=2./7.)  
+integer*4 i,init,n0  
+real*8 d1,d2,e1,e2,sum,x2,xp,xx,c(nmax)  
+save init,c  
+data init/0/  
+if(init.eq.0) then  
+init=1  
+do 11 i=1,nmax  
+c(i)=exp(-((2.*float(i)-1.)*h)**2)  
+11 continue  
+endif  
+if(abs(x).lt.0.2) then  
+x2=x**2  
+dawson=x*(1.-a1*x2*(1.-a2*x2*(1.-a3*x2)))  
+else  
+xx=abs(x)  
+n0=2*nint(0.5*xx/h)  
+xp=xx-float(n0)*h  
+e1=exp(2.*xp*h)  
+e2=e1**2  
+d1=float(n0+1)  
+d2=d1-2.  
+sum=0.  
+do 12 i=1,nmax  
+sum=sum+c(i)*(e1/d1+1./(d2*e1))  
+d1=d1+2.  
+d2=d2-2.  
+e1=e2*e1  
+12 continue  
+dawson=0.5641895835*sign(exp(-xp**2),x)*sum  
+endif  
+return 
+59 
+end  
+! -----------------------------------------------------  ! ---- Bessel Function Subroutine --------------  real*8 Function J0(value)  
+real*8 pi  
+integer k  
+real*8 value  
+real*8 y,z,kfac,Sum1,Sum2  
+pi=acos(-1.)  
+IF (value.gt.15.0) then  
+J0=SQRT(2.0/Pi/value)*COS(value-Pi/4.0)  goto 4000  
+endif  
+If (value.eq.0.0) then  
+J0=1.  
+goto 4000  
+endif  
+Sum2=1.0  
+kfac=1.0  
+z=1.0  
+do 100 k=1,100  
+Sum1=Sum2  
+kfac=kfac*real(k)  
+y=(value/2.0)**2  
+y=Exp(real(k)*dlog(y))  
+z=z*(-1.0)  
+Sum2=Sum2+z*y/kfac**2  
+y=ABS(Sum1-Sum2)  
+If (y.lt.1.0E-6) goto 2000  
+100 continue  
+2000 J0=Sum2  
+4000 return  
+end  
+! ----------------------------------------------------- 
+60
